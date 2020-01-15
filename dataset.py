@@ -19,7 +19,7 @@ class Dataset:
 
         train_set = self.load_h5()
         self.train_set = tf.data.Dataset.from_tensor_slices(train_set)
-        self.train_set = self.train_set.shuffle(1000).batch(flags.batch)
+        self.train_set = self.train_set.shuffle(1000).batch(self.flags.batch)
 
     def load_h5(self):
         if not os.path.exists('./train.h5'):
@@ -59,8 +59,8 @@ class Dataset:
         for i in range(0, h - self.flags.psize + 1, self.flags.psize):
             for j in range(0, w - self.flags.psize + 1, self.flags.psize):
                 # slicing [from:to, from:to]
-                input_ = cubic_y[i:i + self.flaself.gs.psize, j:j + self.flags.psize]  # 쪼개져 나온 패치
-                label_ = y[i:i + self.flags.psize, j:j + self.flags.psize]
+                input_ = ncubic_y[i:i + self.flags.psize, j:j + self.flags.psize]  # 쪼개져 나온 패치
+                label_ = ny[i:i + self.flags.psize, j:j + self.flags.psize]
 
                 input_list.append(input_)
                 label_list.append(label_)
