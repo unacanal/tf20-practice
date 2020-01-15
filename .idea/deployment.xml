@@ -5,7 +5,7 @@
       <paths name="ivpl-d14@203.153.147.57:7293">
         <serverdata>
           <mappings>
-            <mapping deploy="/tmp/pycharm_project_306" local="$PROJECT_DIR$" />
+            <mapping deploy="/PycharmProjects/tf20-practice" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>
