@@ -50,7 +50,7 @@ class Dataset:
                 input_ = tf.expand_dims(input_, axis=-1)
                 label_ = tf.expand_dims(label_, axis=-1)
 
-                yield (input_, label_) # 이 루프는 계속 실행이 됨. 반환 하고도 끝내면 안될 때 yield를 씀
+                yield input_, label_ # 이 루프는 계속 실행이 됨. 반환 하고도 끝내면 안될 때 yield를 씀
 
     def load_h5(self):
         if not os.path.exists('./train.h5'):
@@ -102,10 +102,12 @@ class Dataset:
         y = np.fromfile(fp, np.uint8, w * h).reshape((h, w))
         u = np.fromfile(fp, np.uint8, w * h // 4).reshape((h // 2, w // 2))  # // : 소수점 버림
         v = np.fromfile(fp, np.uint8, w * h // 4).reshape((h // 2, w // 2))
-        y = y / 255.
+        fp.close()
+
+        y = np.asarray((y / 255.), np.float)
         u = u / 255.
         v = v / 255.
-        fp.close()
+
         return y, u, v
 
     def yuv_meta(self, file):
