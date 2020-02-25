@@ -195,3 +195,62 @@ class ComplexModel(tf.keras.Model):
         y7 = self.c6(y6)
 
         return y7 + inputs
+
+class InceptionModule(Layer):
+    def __init__(self):
+        super(InceptionModule, self).__init__()
+
+        self.c11 = Conv2D(filters=128,
+                         kernel_size=(1, 1),
+                         padding='same',
+                         kernel_initializer=tf.initializers.he_normal())
+
+        self.c33 = Conv2D(filters=128,
+                         kernel_size=(3, 3),
+                         padding='same',
+                         kernel_initializer=tf.initializers.he_normal())
+
+        self.c55 = Conv2D(filters=128,
+                          kernel_size=(5, 5),
+                          padding='same',
+                          kernel_initializer=tf.initializers.he_normal())
+
+    def call(self, inputs, **kwargs):
+        y0 = y10 = y20 = self.c11(inputs)
+        y30 = tf.nn.max_pool(inputs, (3, 3), 1, 'SAME')
+        y11 = self.c33(y10)
+        y21 = self.c55(y20)
+        y31 = self.c11(y30)
+        output = y0 + y11 + y21 + y31
+
+        return output+inputs
+
+class InceptionSR(tf.keras.Model):
+    def __init__(self):
+        super(InceptionSR, self).__init__()
+        self.c1 = Conv2D(filters=128,
+                         kernel_size=(3, 3),
+                         padding='same',
+                         activation='relu',
+                         kernel_initializer=tf.initializers.he_normal())
+
+        self.i1 = InceptionModule()
+        self.i2 = InceptionModule()
+        self.i3 = InceptionModule()
+        # self.i4 = InceptionModule()
+        # self.i5 = InceptionModule()
+
+        self.c2 = Conv2D(filters=1,
+                         kernel_size=(3, 3),
+                         padding='same',
+                         kernel_initializer=tf.initializers.he_normal())
+
+    def call(self, inputs, training=None, mask=None):
+        y1 = self.c1(inputs)
+        y2 = self.i1(y1)
+        y3 = self.i2(y2)
+        y4 = self.i3(y3)
+        output = self.c2(y4)
+
+        return output + inputs
+

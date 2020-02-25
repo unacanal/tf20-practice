@@ -17,19 +17,20 @@ def train_step(model, loss_fn, opt, batch):
     return loss, prediction #, residual
 
 @tf.function
-def test_step(model, image):
-    tf.shape(image)
-    input = tf.reshape(image, [1, 712, 1072, 1])
-    target = input
+def test_step(model, test, orig):
+    tf.shape(test)
+    input = tf.reshape(test, [1, 712, 1072, 1])
+    origin = tf.reshape(orig, [1, 712, 1072, 1])
 
     prediction = model(input)
     clipped_prediction = tf.clip_by_value(prediction, 0., 1.)
     prediction = tf.image.convert_image_dtype(clipped_prediction, tf.float32)
-    target = tf.image.convert_image_dtype(target, tf.float32)
+    input = tf.image.convert_image_dtype(input, tf.float32)
 
-    PSNR = tf.image.psnr(target, prediction, max_val=1.0)
+    PSNR = tf.image.psnr(prediction, origin, max_val=1.0)
+    PSNR2 = tf.image.psnr(input, origin, max_val=1.0)
 
-    return PSNR, prediction
+    return PSNR, PSNR2, prediction
 
 def main(flags):
     # 데이터셋 클래스
@@ -87,17 +88,18 @@ def main(flags):
 
                 all_test_pred = []
 
-                for image in ds.test_set:
-                    PSNR, test_prediction = test_step(model, image)
+                for i in range(12): # of test data
+                    PSNR, PSNR2, test_prediction = test_step(model, ds.test_set[i], ds.test_orig[i])
                     if img_num == 0:
                         all_test_pred = test_prediction
                     else:
                         all_test_pred = np.vstack((all_test_pred, test_prediction))
                     img_num += 1
-                    print(img_num, PSNR)
+                    print("%2d [input/orig: %10f] [pred/orig: %10f]" %(img_num, float(PSNR2), float(PSNR)))
 
                     with train_summary_writer.as_default():
-                        tf.summary.scalar('psnr'+str(img_num), float(PSNR), step=count)
+                        tf.summary.scalar('psnr(pred/org)-'+str(img_num), float(PSNR), step=count)
+                        tf.summary.scalar('psnr(input/org)-'+str(img_num), float(PSNR2), step=count)
                         train_summary_writer.flush()
                 all_test_pred = np.reshape(all_test_pred, [12, 712, 1072, 1])
 
@@ -105,8 +107,8 @@ def main(flags):
 
                 with train_summary_writer.as_default():
                     #tf.summary.add_scalar('psnr', float(PSNR), step=count)
-                    tf.summary.image('test_prediction', all_test_pred, step=count)
-                    tf.summary.image('test_origin', tf.reshape(ds.test_set, [12, 712, 1072, 1]), step=count)
+                    tf.summary.image('test_prediction', all_test_pred, step=count, max_outputs=12)
+                    tf.summary.image('test_input', tf.reshape(ds.test_set, [12, 712, 1072, 1]), step=count, max_outputs=12)
 
                     tf.summary.scalar('loss', train_loss.result(), step=count)
                     tf.summary.image('input', batch[0], step=count)
@@ -122,7 +124,7 @@ if __name__ == "__main__":
         description="매개변수 목록",
         epilog="바위"
     )
-    parser.add_argument('--model', type=str, choices=["ivpl24", "SRCNN", "ComplexModel"],
+    parser.add_argument('--model', type=str, choices=["ivpl24", "SRCNN", "ComplexModel", "InceptionSR"],
                         help="신경망 모델")
     parser.add_argument('--data', type=str, default="/home/ivpl-d14/Dataset/",
                         help="YUV 파일이 저장된 위치")

@@ -25,7 +25,7 @@ class Dataset:
         self.train_set = tf.data.Dataset.from_generator(self.train_generator, types) # 데이터셋을 이 함수의 아웃풋으로 만들겠다 # 함수를 인자로 받음
         self.train_set = self.train_set.shuffle(1000).batch(self.flags.batch)
 
-        self.test_set = self.make_test_set()
+        self.test_set, self.test_orig = self.make_test_set()
 
     def train_generator(self):
         enc_path = os.path.join(self.flags.data, 'train') # 그냥 concatenation해도 되는데 / 때문에 경로 문제 발생 가능
@@ -44,19 +44,28 @@ class Dataset:
 
     def make_test_set(self):
         test_path = os.path.join(self.flags.data, 'test')
+        org_path = os.path.join(self.flags.data, 'orig')
         yuv_list = glob.glob(os.path.join(test_path, "*.yuv"))
         result = np.array([])
         count = 0
         for fpath in yuv_list:
+            name = os.path.basename(fpath)
+            org_f = os.path.join(org_path, name)
+
             h, w = self.yuv_meta(fpath)
             test_y, _, _ = self.get_yuv(fpath, h, w)
+            org_y, _, _ = self.get_yuv(org_f, h, w)
+
             if count == 0:
                 result = test_y
+                orig = org_y
             else:
                 result = np.vstack((result, test_y))
+                orig = np.vstack((orig, org_y))
             count += 1
         result = result.reshape((12, 712, 1072))
-        return result
+        orig = orig.reshape((12, 712, 1072))
+        return result, orig
 
     def make_patch(self, enc, org, h, w):
         for i in range(0, h - self.flags.psize + 1, self.flags.psize):
